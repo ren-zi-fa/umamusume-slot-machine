@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PixiJS Slot Machine</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.12.0/pixi.min.js"></script>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 20px;
+      background: #222;
+      color: white;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <div id="loading" style="text-align: center; margin: 20px">
+      <h2>Loading Slot Machine...</h2>
+      <p>Creating demo with placeholder graphics</p>
+    </div>
+
+    <script>
+      (async function () {
+        try {
+          // Wait for PIXI to be fully loaded
+          await new Promise((resolve) => {
+            if (window.PIXI) {
+              resolve();
+            } else {
+              window.addEventListener("load", resolve);
+            }
+          });
+
+          // Add this function before app initialization
+          function getResponsiveDimensions() {
+            const width = Math.min(window.innerWidth - 40, 800);
+            const height = Math.min(window.innerHeight - 40, 800);
+
+            // Calculate responsive sizes
+            const slotWidth = Math.floor(width * 0.14); // 14% of width
+            const slotHeight = Math.floor(height * 0.12); // 12% of height
+            const slotGapX = Math.floor(width * 0.035); // 3.5% of width
+            const slotGapY = Math.floor(height * 0.035); // 3.5% of height
+
+            return {
+              width,
+              height,
+              slotWidth,
+              slotHeight,
+              slotGapX,
+              slotGapY,
+              startX: Math.floor((width - (4 * slotWidth + 3 * slotGapX)) / 2),
+              startY: Math.floor(height * 0.09), // 9% from top
+              buttonY: Math.floor(height * 0.75), // 75% from top
+            };
+          }
+
+          const dim = getResponsiveDimensions();
+          const app = new PIXI.Application();
+
+          // Initialize app properly
+          await app.init({
+            width: dim.width,
+            height: dim.height,
+            backgroundColor: 0x1a1a2e,
+            antialias: true,
+          });
+
+          document.body.appendChild(app.canvas);
+          document.getElementById("loading").style.display = "none";
+
+          // Load atlas files
+          let slotTextures, uiTextures;
+
+          try {
+            await PIXI.Assets.load([
+              "/assets/machine/slot.json", // atlas simbol slot
+              "/assets/machine/button-slot.json", // atlas tombol
+            ]);
+
+            slotTextures = PIXI.Assets.cache.get(
+              "/assets/machine/slot.json"
+            ).textures;
+            uiTextures = PIXI.Assets.cache.get(
+              "/assets/machine/button-slot.json"
+            ).textures;
+          } catch (assetError) {
+            console.warn(
+              "Could not load external assets, using fallback textures"
+            );
+
+            // Fallback textures if assets fail to load
+            const symbolColors = [
+              0xff6b6b, 0x4ecdc4, 0x45b7d1, 0x96ceb4, 0xfeca57, 0xff9ff3,
+              0xffa726, 0x9c27b0, 0x795548, 0x607d8b, 0x8bc34a, 0xff5722,
+              0x3f51b5,
+            ];
+            slotTextures = {};
+
+            // Generate fallback textures matching your atlas structure
+            for (let i = 1; i <= 13; i++) {
+              const graphics = new PIXI.Graphics();
+              graphics.beginFill(symbolColors[i - 1]);
+              graphics.drawRoundedRect(0, 0, 150, 150, 15);
+              graphics.endFill();
+
+              // Add character number
+              const text = new PIXI.Text(`CHAR\n${i}`, {
+                fontSize: 20,
+                fill: 0xffffff,
+                fontWeight: "bold",
+                align: "center",
+              });
+              text.anchor.set(0.5);
+              text.x = 75;
+              text.y = 75;
+              graphics.addChild(text);
+
+              slotTextures[`char-${i}.png`] =
+                app.renderer.generateTexture(graphics);
+            }
+
+            // Create fallback UI textures
+            const createButtonTexture = (color, text) => {
+              const graphics = new PIXI.Graphics();
+              graphics.beginFill(color);
+              graphics.drawRoundedRect(0, 0, 232, 80, 10);
+              graphics.endFill();
+              graphics.lineStyle(3, 0xffffff);
+              graphics.drawRoundedRect(0, 0, 232, 80, 10);
+
+              const buttonText = new PIXI.Text(text, {
+                fontSize: 24,
+                fill: 0xffffff,
+                fontWeight: "bold",
+              });
+              buttonText.anchor.set(0.5);
+              buttonText.x = 116;
+              buttonText.y = 40;
+              graphics.addChild(buttonText);
+
+              return app.renderer.generateTexture(graphics);
+            };
+
+            uiTextures = {
+              "spin.png": createButtonTexture(0x4caf50, "SPIN"),
+              "spin-off.png": createButtonTexture(0x2e7d32, "SPIN"),
+              "auto-spin.png": createButtonTexture(0xff9800, "AUTO"),
+              "auto-spin-off.png": createButtonTexture(0xf57c00, "AUTO"),
+              "stop.png": createButtonTexture(0xf44336, "STOP"),
+              "stop-off.png": createButtonTexture(0xd32f2f, "STOP"),
+            };
+          }
+
+          // Buat background untuk slot machine
+          const background = new PIXI.Graphics();
+          background.beginFill(0x16213e);
+          background.drawRoundedRect(
+            dim.width * 0.04, // 4% margin
+            dim.height * 0.025, // 2.5% margin
+            dim.width * 0.92, // 92% width
+            dim.height * 0.81, // 81% height
+            30
+          );
+          background.endFill();
+          background.lineStyle(4, 0x0f4c75);
+          background.drawRoundedRect(
+            dim.width * 0.04,
+            dim.height * 0.025,
+            dim.width * 0.92,
+            dim.height * 0.81,
+            30
+          );
+          app.stage.addChild(background);
+
+          // Buat reel container
+          const reelContainer = new PIXI.Container();
+          app.stage.addChild(reelContainer);
+
+          const symbols = Object.keys(slotTextures).filter((key) =>
+            key.startsWith("char-")
+          );
+          const reelSprites = [];
+          let isSpinning = false;
+
+          // Ukuran dan posisi slot agar tidak berhimpitan
+          const slotWidth = 110;
+          const slotHeight = 100;
+          const slotGapX = 28;
+          const slotGapY = 28;
+          const cols = 4;
+          const rows = 4;
+          // Center slot di background baru
+          const startX = 120; // (800 - (cols*slotWidth + (cols-1)*slotGapX)) / 2
+          const startY = 70;
+
+          // Inisialisasi reel sprites
+          for (let i = 0; i < cols; i++) {
+            reelSprites[i] = [];
+            for (let j = 0; j < rows + 5; j++) {
+              // TAMBAH jumlah baris jadi 9
+              const texName =
+                symbols[Math.floor(Math.random() * symbols.length)];
+              const sprite = new PIXI.Sprite(slotTextures[texName]);
+              sprite.width = slotWidth;
+              sprite.height = slotHeight;
+              sprite.x = startX + i * (slotWidth + slotGapX);
+              sprite.y = startY + j * (slotHeight + slotGapY);
+              reelContainer.addChild(sprite);
+              reelSprites[i][j] = sprite;
+            }
+          }
+
+          // Buat mask untuk reel area
+          const mask = new PIXI.Graphics();
+          mask.beginFill(0xffffff);
+          mask.drawRect(
+            startX,
+            startY,
+            cols * slotWidth + (cols - 1) * slotGapX,
+            rows * slotHeight + (rows - 1) * slotGapY
+          );
+          mask.endFill();
+          reelContainer.mask = mask;
+          app.stage.addChild(mask);
+
+          // Buat tombol spin dengan posisi lebih ke bawah
+          const spinButton = new PIXI.Sprite(uiTextures["spin.png"]);
+          spinButton.interactive = true;
+          spinButton.cursor = "pointer";
+          spinButton.x = 400;
+          spinButton.y = 600; // dari 480 ke 600
+          spinButton.anchor.set(0.5);
+          spinButton.scale.set(0.8);
+
+          app.stage.addChild(spinButton);
+
+          // Tambah tombol auto spin
+          const autoSpinButton = new PIXI.Sprite(uiTextures["auto-spin.png"]);
+          autoSpinButton.interactive = true;
+          autoSpinButton.cursor = "pointer";
+          autoSpinButton.x = 220;
+          autoSpinButton.y = 600; // dari 480 ke 600
+          autoSpinButton.anchor.set(0.5);
+          autoSpinButton.scale.set(0.6);
+          app.stage.addChild(autoSpinButton);
+
+          // Tambah tombol stop
+          const stopButton = new PIXI.Sprite(uiTextures["stop.png"]);
+          stopButton.interactive = true;
+          stopButton.cursor = "pointer";
+          stopButton.x = 580;
+          stopButton.y = 600; // dari 480 ke 600
+          stopButton.anchor.set(0.5);
+          stopButton.scale.set(0.6);
+          app.stage.addChild(stopButton);
+
+          let autoSpinActive = false;
+          let currentTicker = null;
+
+          // Event handler untuk tombol spin
+          spinButton.on("pointerdown", () => {
+            if (!isSpinning && !autoSpinActive) {
+              spinButton.texture = uiTextures["spin-off.png"];
+              spin();
+              setTimeout(() => {
+                if (spinButton.texture === uiTextures["spin-off.png"]) {
+                  spinButton.texture = uiTextures["spin.png"];
+                }
+              }, 200);
+            }
+          });
+
+          // Event handler untuk auto spin
+          autoSpinButton.on("pointerdown", () => {
+            if (!autoSpinActive) {
+              autoSpinActive = true;
+              autoSpinButton.texture = uiTextures["auto-spin-off.png"];
+              autoSpin();
+            }
+          });
+
+          // Event handler untuk stop
+          stopButton.on("pointerdown", () => {
+            if (autoSpinActive) {
+              autoSpinActive = false;
+              autoSpinButton.texture = uiTextures["auto-spin.png"];
+              stopButton.texture = uiTextures["stop-off.png"];
+              setTimeout(() => {
+                stopButton.texture = uiTextures["stop.png"];
+              }, 200);
+            }
+          });
+
+          // Tambah hover effects untuk semua tombol
+          [spinButton, autoSpinButton, stopButton].forEach((button) => {
+            button.on("pointerover", () => {
+              if (!isSpinning || button === stopButton) {
+                button.scale.set(button.scale.x * 1.05);
+              }
+            });
+
+            button.on("pointerout", () => {
+              button.scale.set(button.scale.x / 1.05);
+            });
+          });
+
+          function spin() {
+            if (isSpinning) return;
+
+            isSpinning = true;
+            let time = 0;
+            const spinDuration = 2000; // 2 detik
+            const baseSpeed = 15;
+
+            currentTicker = new PIXI.Ticker();
+            currentTicker.add(() => {
+              time += currentTicker.deltaTime;
+
+              const progress = Math.min(time / (spinDuration / 16.67), 1);
+              const easeOut = 1 - Math.pow(1 - progress, 3);
+              const currentSpeed = baseSpeed * (1 - easeOut * 0.8);
+
+              for (let col = 0; col < cols; col++) {
+                const colDelay = col * 18;
+                if (time > colDelay) {
+                  for (let row = 0; row < reelSprites[col].length; row++) {
+                    reelSprites[col][row].y += currentSpeed;
+
+                    if (
+                      reelSprites[col][row].y >=
+                      startY + (rows + 2) * (slotHeight + slotGapY)
+                    ) {
+                      const newSymbol =
+                        symbols[Math.floor(Math.random() * symbols.length)];
+                      reelSprites[col][row].texture = slotTextures[newSymbol];
+                      // Ganti baris berikut:
+                      // reelSprites[col][row].y =
+                      //   reelSprites[col][row].y - reelSprites[col].length * (slotHeight + slotGapY);
+
+                      // Dengan baris berikut agar posisi tidak menempel:
+                      // Cari sprite dengan y terkecil di kolom ini
+                      let minY = Math.min(...reelSprites[col].map((s) => s.y));
+                      reelSprites[col][row].y = minY - (slotHeight + slotGapY);
+                    }
+                  }
+                }
+              }
+
+              if (time > spinDuration / 16.67 + 54) {
+                currentTicker.stop();
+                currentTicker.destroy();
+                currentTicker = null;
+                isSpinning = false;
+                snapToFinalPosition();
+                if (autoSpinActive) {
+                  setTimeout(() => {
+                    if (autoSpinActive) spin();
+                  }, 1000);
+                }
+              }
+            });
+            currentTicker.start();
+          }
+
+          function autoSpin() {
+            if (autoSpinActive && !isSpinning) {
+              spin();
+            }
+          }
+
+          function snapToFinalPosition() {
+            for (let col = 0; col < cols; col++) {
+              // Urutkan sprite berdasarkan y
+              reelSprites[col].sort((a, b) => a.y - b.y);
+
+              // Ambil 4 sprite teratas untuk grid utama
+              for (let row = 0; row < rows; row++) {
+                const sprite = reelSprites[col][row];
+                sprite.y = startY + row * (slotHeight + slotGapY);
+              }
+              // Sisanya letakkan di luar area tampilan
+              for (let row = rows; row < reelSprites[col].length; row++) {
+                reelSprites[col][row].y =
+                  startY +
+                  (rows + 1) * (slotHeight + slotGapY) +
+                  (row - rows) * 10;
+              }
+            }
+            // Pastikan posisi x juga tetap (jika perlu, tambahkan baris ini)
+            for (let col = 0; col < cols; col++) {
+              for (let row = 0; row < rows; row++) {
+                reelSprites[col][row].x = startX + col * (slotWidth + slotGapX);
+              }
+            }
+            checkWinConditions();
+          }
+
+          function checkWinConditions() {
+            const grid = [];
+            for (let col = 0; col < cols; col++) {
+              grid[col] = [];
+              for (let row = 0; row < rows; row++) {
+                // Get texture name from sprite
+                const texture = reelSprites[col][row].texture;
+                for (let symbolName of symbols) {
+                  if (texture === slotTextures[symbolName]) {
+                    grid[col][row] = symbolName;
+                    break;
+                  }
+                }
+              }
+            }
+
+            // Check horizontal lines
+            let hasWin = false;
+            for (let row = 0; row < rows; row++) {
+              let win = true;
+              for (let col = 1; col < cols; col++) {
+                if (grid[col][row] !== grid[0][row]) {
+                  win = false;
+                  break;
+                }
+              }
+              if (win) {
+                hasWin = true;
+                highlightWinLine(row, "horizontal");
+              }
+            }
+
+            // Check diagonal lines
+            let diag1 = true,
+              diag2 = true;
+            for (let i = 1; i < cols; i++) {
+              if (grid[i][i] !== grid[0][0]) diag1 = false;
+              if (grid[i][cols - i - 1] !== grid[0][cols - 1]) diag2 = false;
+            }
+            if (diag1) {
+              hasWin = true;
+              highlightWinLine(0, "diagonal1");
+            }
+            if (diag2) {
+              hasWin = true;
+              highlightWinLine(0, "diagonal2");
+            }
+            if (hasWin) showWinEffect();
+          }
+
+          function highlightWinLine(row, type) {
+            const line = new PIXI.Graphics();
+            line.lineStyle(8, 0xffd700);
+
+            if (type === "horizontal") {
+              line.moveTo(
+                startX,
+                startY + row * (slotHeight + slotGapY) + slotHeight / 2
+              );
+              line.lineTo(
+                startX + (cols - 1) * (slotWidth + slotGapX),
+                startY + row * (slotHeight + slotGapY) + slotHeight / 2
+              );
+            } else if (type === "diagonal1") {
+              line.moveTo(startX, startY + slotHeight / 2);
+              line.lineTo(
+                startX + (cols - 1) * (slotWidth + slotGapX),
+                startY + (rows - 1) * (slotHeight + slotGapY) + slotHeight / 2
+              );
+            } else if (type === "diagonal2") {
+              line.moveTo(
+                startX,
+                startY + (rows - 1) * (slotHeight + slotGapY) + slotHeight / 2
+              );
+              line.lineTo(
+                startX + (cols - 1) * (slotWidth + slotGapX),
+                startY + slotHeight / 2
+              );
+            }
+            app.stage.addChild(line);
+            setTimeout(() => {
+              if (app.stage.children.includes(line)) {
+                app.stage.removeChild(line);
+              }
+            }, 3000);
+          }
+
+          function showWinEffect() {
+            const winText = new PIXI.Text("WIN!", {
+              fontSize: 72,
+              fill: 0xffd700,
+              fontWeight: "bold",
+              stroke: 0x000000,
+              strokeThickness: 4,
+            });
+            winText.anchor.set(0.5);
+            winText.x = 400;
+            winText.y = 300;
+            winText.alpha = 0;
+            app.stage.addChild(winText);
+
+            // Animate win text
+            const ticker = new PIXI.Ticker();
+            let time = 0;
+            ticker.add(() => {
+              time += ticker.deltaTime;
+              winText.alpha = Math.sin(time * 0.6) * 0.5 + 0.5;
+              winText.scale.set(1 + Math.sin(time * 0.5) * 0.1);
+
+              if (time > 180) {
+                // frames instead of ms
+                app.stage.removeChild(winText);
+                ticker.stop();
+                ticker.destroy();
+              }
+            });
+            ticker.start();
+          }
+
+          // Tambah title
+          const title = new PIXI.Text("SLOT MACHINE", {
+            fontSize: 32,
+            fill: 0xffffff,
+            fontWeight: "bold",
+          });
+          title.anchor.set(0.5, 0);
+          title.x = 400;
+          title.y = 10;
+          app.stage.addChild(title);
+        } catch (error) {
+          console.error("Error initializing slot machine:", error);
+          document.getElementById("loading").innerHTML =
+            '<h2 style="color: red;">Error Loading Slot Machine</h2>' +
+            "<p>Check console for details. Make sure asset files are available.</p>";
+        }
+      })();
+    </script>
+  </body>
+</html>

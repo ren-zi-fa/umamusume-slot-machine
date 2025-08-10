@@ -1,0 +1,100 @@
+{"frames": {
+
+"add-off.png":
+{
+	"frame": {"x":0,"y":0,"w":61,"h":74},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":61,"h":74},
+	"sourceSize": {"w":61,"h":74}
+},
+"add.png":
+{
+	"frame": {"x":61,"y":0,"w":61,"h":74},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":61,"h":74},
+	"sourceSize": {"w":61,"h":74}
+},
+"auto-spin-off.png":
+{
+	"frame": {"x":122,"y":0,"w":232,"h":80},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":232,"h":80},
+	"sourceSize": {"w":232,"h":80}
+},
+"auto-spin.png":
+{
+	"frame": {"x":354,"y":0,"w":232,"h":80},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":232,"h":80},
+	"sourceSize": {"w":232,"h":80}
+},
+"minus-off.png":
+{
+	"frame": {"x":586,"y":0,"w":61,"h":74},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":61,"h":74},
+	"sourceSize": {"w":61,"h":74}
+},
+"minus.png":
+{
+	"frame": {"x":647,"y":0,"w":61,"h":74},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":61,"h":74},
+	"sourceSize": {"w":61,"h":74}
+},
+"spin-off.png":
+{
+	"frame": {"x":708,"y":0,"w":232,"h":80},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":232,"h":80},
+	"sourceSize": {"w":232,"h":80}
+},
+"spin.png":
+{
+	"frame": {"x":940,"y":0,"w":232,"h":80},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":232,"h":80},
+	"sourceSize": {"w":232,"h":80}
+},
+"stop-off.png":
+{
+	"frame": {"x":1172,"y":0,"w":232,"h":80},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":232,"h":80},
+	"sourceSize": {"w":232,"h":80}
+},
+"stop.png":
+{
+	"frame": {"x":1404,"y":0,"w":232,"h":80},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":232,"h":80},
+	"sourceSize": {"w":232,"h":80}
+},
+"win.png":
+{
+	"frame": {"x":0,"y":80,"w":2017,"h":1806},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":2017,"h":1806},
+	"sourceSize": {"w":2017,"h":1806}
+}},
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.1",
+	"image": "button-slot.png",
+	"format": "RGBA8888",
+	"size": {"w":2017,"h":1886},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:1bdafaecf97b89dcb0ace75a91e53de2:66b38ccdbca1bc21f0e340d126012f6f:3d2c90f7294baa430a06c0a6df2f62b1$"
+}
+}
