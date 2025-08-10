@@ -75,15 +75,15 @@
 
           try {
             await PIXI.Assets.load([
-              "/assets/machine/slot.json", // atlas simbol slot
-              "/assets/machine/button-slot.json", // atlas tombol
+              "/umamusume-slot-machine/assets/machine/slot.json", // atlas simbol slot
+              "/umamusume-slot-machine/assets/machine/button-slot.json", // atlas tombol
             ]);
 
             slotTextures = PIXI.Assets.cache.get(
-              "/assets/machine/slot.json"
+              "/umamusume-slot-machine/assets/machine/slot.json"
             ).textures;
             uiTextures = PIXI.Assets.cache.get(
-              "/assets/machine/button-slot.json"
+              "/umamusume-slot-machine/assets/machine/button-slot.json"
             ).textures;
           } catch (assetError) {
             console.warn(
